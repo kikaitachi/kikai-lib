@@ -1,6 +1,7 @@
 module;
 
 import logger;
+import sha1;
 
 export module ws_server;
 

@@ -11,5 +11,6 @@ target_sources(${PROJECT_NAME}
   PUBLIC
     FILE_SET modules TYPE CXX_MODULES FILES
     src/logger.cpp
+    src/sha1.cpp
     src/ws_server.cpp
 )
