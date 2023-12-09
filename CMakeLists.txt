@@ -10,5 +10,6 @@ add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME}
   PUBLIC
     FILE_SET modules TYPE CXX_MODULES FILES
+    src/logger.cpp
     src/ws_server.cpp
 )

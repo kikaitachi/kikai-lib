@@ -1,12 +1,12 @@
 module;
 
-#include <stdio.h>
+import logger;
 
 export module ws_server;
 
 export class WebSocketServer {
  public:
-  WebSocketServer() {
-    printf("WebSocketServer\n");
+  WebSocketServer(int port) {
+    log::info("WebSocket server started on port %d\n", port);
   }
 };
