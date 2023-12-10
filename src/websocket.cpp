@@ -21,13 +21,13 @@ class Server {
   Server(IOLoop& io_loop, int port) : io_loop(io_loop) {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
-      log::last("Failed to create WebSocket server socket");
+      logger::last("Failed to create WebSocket server socket");
       return;
     }
     int sock_option = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &sock_option,
                    sizeof(sock_option)) == -1) {
-      log::last("Can't enable SO_REUSEADDR option for WebSocket server socket");
+      logger::last("Can't enable SO_REUSEADDR option for WebSocket server socket");
       return;
     }
     struct sockaddr_in serv_addr;
@@ -37,17 +37,32 @@ class Server {
     serv_addr.sin_port = htons(port);
     if (bind(server_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) ==
         -1) {
-      log::last("Failed to bind WebSocket server socket");
+      logger::last("Failed to bind WebSocket server socket");
       return;
     }
     if (listen(server_fd, 10) == -1) {
-      log::last("Failed to listen to WebSocket server socket");
+      logger::last("Failed to listen to WebSocket server socket");
       return;
     }
-    log::info("WebSocket server started on port %d\n", port);
+    io_loop.add_handler(server_fd, IOLoop::read, [&](int fd, uint32_t events) {
+      accept_connection(fd);
+    });
+    logger::info("WebSocket server started on port %d\n", port);
   }
  private:
   IOLoop& io_loop;
+
+  void accept_connection(int fd) {
+    sockaddr addr;
+    socklen_t addr_len = sizeof(addr);
+    int client_fd = accept(fd, &addr, &addr_len);
+    if (client_fd == -1) {
+      logger::last("Failed to accept connection on server socket %d", fd);
+      return;
+    }
+    logger::info("New connection with address length: %d", addr_len);
+    // TODO: implement
+  }
 };
 
 }

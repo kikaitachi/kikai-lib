@@ -13,7 +13,7 @@ module;
 
 export module logger;
 
-namespace log {
+namespace logger {
 
 export enum level { level_debug,
                     level_info,

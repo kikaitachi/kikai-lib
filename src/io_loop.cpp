@@ -35,7 +35,7 @@ export class IOLoop {
 
     epoll_fd = epoll_create1(0);
     if (epoll_fd == -1) {
-      log::last("Can't create epoll descriptor");
+      logger::last("Can't create epoll descriptor");
     }
     // Add handler for closing stdin which will be a symptom of terminating ssh session
     add_handler(0, closed | edge_triggered, [&](int fd, uint32_t events) {
@@ -49,7 +49,7 @@ export class IOLoop {
     event.data.fd = fd;
     event.events = events;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1) {
-      log::last("Failed to add descriptor %d to epoll descriptor %d for events %d",
+      logger::last("Failed to add descriptor %d to epoll descriptor %d for events %d",
                    fd, epoll_fd, events);
       return false;
     }
@@ -63,7 +63,7 @@ export class IOLoop {
     event.data.fd = fd;
     event.events = events;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1) {
-      log::last("Failed to update descriptor %d to epoll descriptor %d for events %d",
+      logger::last("Failed to update descriptor %d to epoll descriptor %d for events %d",
                    fd, epoll_fd, events);
       return false;
     }
@@ -72,7 +72,7 @@ export class IOLoop {
 
   void remove_handler(int fd) {
     if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
-      log::last("Failed to remove descriptor %d from epoll descriptor %d",
+      logger::last("Failed to remove descriptor %d from epoll descriptor %d",
                    fd, epoll_fd);
     }
     fd_to_handler.erase(fd);
@@ -90,7 +90,7 @@ export class IOLoop {
         int fd = events[i].data.fd;
         auto handler = fd_to_handler.find(fd);
         if (handler == fd_to_handler.end()) {
-          log::error("Got epoll event for descriptor %d which doesn't have handler", fd);
+          logger::error("Got epoll event for descriptor %d which doesn't have handler", fd);
         } else {
           handler->second(fd, events[i].events);
         }
