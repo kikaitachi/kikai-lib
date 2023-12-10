@@ -1,6 +1,7 @@
 module;
 
 import comms;
+import io_loop;
 import logger;
 import sha1;
 
@@ -17,7 +18,7 @@ export namespace WebSocket {
 
 class Server {
  public:
-  Server(int port) {
+  Server(IOLoop& io_loop, int port) : io_loop(io_loop) {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
       log::last("Failed to create WebSocket server socket");
@@ -45,6 +46,8 @@ class Server {
     }
     log::info("WebSocket server started on port %d\n", port);
   }
+ private:
+  IOLoop& io_loop;
 };
 
 }

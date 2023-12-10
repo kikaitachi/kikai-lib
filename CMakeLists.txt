@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME}
     FILE_SET modules TYPE CXX_MODULES FILES
     src/base64.cpp
     src/comms.cpp
+    src/io_loop.cpp
     src/logger.cpp
     src/sha1.cpp
     src/websocket.cpp
