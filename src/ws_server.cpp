@@ -1,5 +1,6 @@
 module;
 
+import comms;
 import logger;
 import sha1;
 
