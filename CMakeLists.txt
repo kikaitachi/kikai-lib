@@ -10,6 +10,7 @@ add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME}
   PUBLIC
     FILE_SET modules TYPE CXX_MODULES FILES
+    src/app.cpp
     src/base64.cpp
     src/comms.cpp
     src/io_loop.cpp
