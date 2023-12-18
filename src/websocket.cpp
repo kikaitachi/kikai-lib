@@ -73,6 +73,61 @@ class Server {
   IOLoop& io_loop;
   std::map<int, WebSocketClient*> clients;
 
+  void send_ws_frame(WebSocketClient* client, char opcode, const void* data, size_t size) {
+    char* header = client->write_buffer + client->write_buffer_len;
+    int header_length;
+    if (sizeof(client->write_buffer) - client->write_buffer_len - size < 2) {
+      logger::error("WS(%d) write buffer overflow 2 byte header", client->fd);
+      disconnect(client);
+      return;
+    }
+    header[0] = FINAL_FRAME | opcode;
+    if (size <= 125) {
+      header[1] = size;
+      client->write_buffer_len += 2;
+    } else if (size <= 65535) {
+      if (sizeof(client->write_buffer) - client->write_buffer_len - size < 4) {
+        logger::error("WS(%d) write buffer overflow 4 byte header", client->fd);
+        disconnect(client);
+        return;
+      }
+      header[1] = 126;
+      header[2] = (size >> 8) & 255;
+      header[3] = size & 255;
+      client->write_buffer_len += 4;
+    } else {
+      if (sizeof(client->write_buffer) - client->write_buffer_len - size < 10) {
+        logger::error("WS(%d) write buffer overflow 10 byte header", client->fd);
+        disconnect(client);
+        return;
+      }
+      header[1] = 127;
+      header[2] = 0;
+      header[3] = 0;
+      header[4] = 0;
+      header[5] = 0;
+      header[6] = (size >> 24) & 255;
+      header[7] = (size >> 16) & 255;
+      header[8] = (size >> 8) & 255;
+      header[9] = size & 255;
+      client->write_buffer_len += 10;
+    }
+    memcpy(client->write_buffer + client->write_buffer_len, data, size);
+    client->write_buffer_len += size;
+    ssize_t result = send(client->fd, client->write_buffer, client->write_buffer_len, 0);
+    if (result == -1) {
+      logger::last("WS(%d) failed to send WebSocket frame", client->fd);
+      disconnect(client);
+      return;
+    }
+    if (result != client->write_buffer_len) {
+      memmove(client->write_buffer, client->write_buffer + result, client->write_buffer_len - result);
+      client->write_buffer_len -= result;
+    } else {
+      client->write_buffer_len = 0;
+    }
+  }
+
   void accept_connection(int fd) {
     sockaddr addr;
     socklen_t addr_len = sizeof(addr);
