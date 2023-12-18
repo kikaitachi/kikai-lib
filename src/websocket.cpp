@@ -19,6 +19,11 @@ export module websocket;
 
 const char* web_socket_guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+#define OPCODE_BINARY 2
+#define OPCODE_CLOSE 8
+
+#define FINAL_FRAME 128
+
 class WebSocketClient {
  public:
   int fd;
@@ -127,7 +132,50 @@ class Server {
     }
     logger::info("WS(%d) read %ld bytes", client->fd, client->read_buffer_len);
     if (client->connected) {
-      logger::info("WS(%d) reading frames is not implemented", client->fd);
+      while (client->read_buffer_len >= 6) {
+        int opcode = client->read_buffer[0] & 0x0f;
+        if (opcode == OPCODE_CLOSE) {
+          logger::info("WS(%d) close frame received", client->fd);
+          disconnect(client);
+          return;
+        }
+        uint64_t data_length = client->read_buffer[1] & 127;
+        size_t header_length;
+        if (data_length == 126) {
+          header_length = 8;
+          data_length = client->read_buffer[2] << 8 | client->read_buffer[3];
+        } else if (data_length == 127) {
+          header_length = 14;
+          data_length = (uint64_t)client->read_buffer[2] << 56 |
+                        (uint64_t)client->read_buffer[3] << 48 |
+                        (uint64_t)client->read_buffer[4] << 40 |
+                        (uint64_t)client->read_buffer[5] << 32 |
+                        client->read_buffer[6] << 24 | client->read_buffer[7] << 16 |
+                        client->read_buffer[7] << 8 | client->read_buffer[9];
+        } else {
+          header_length = 6;
+        }
+        size_t frame_length = data_length + header_length;
+        if (client->read_buffer_len >= frame_length) {
+          char mask[4];
+          mask[0] = client->read_buffer[header_length - 4];
+          mask[1] = client->read_buffer[header_length - 3];
+          mask[2] = client->read_buffer[header_length - 2];
+          mask[3] = client->read_buffer[header_length - 1];
+
+          for (int i = 0; i < data_length; i++) {
+            client->read_buffer[i + header_length] ^= mask[i % 4];
+          }
+
+          //for (auto& handler : ws_handlers) {
+          //  handler(fd, data_length, client->read_buffer + header_length);
+          //}
+          logger::info("WS(%d): frame of %d bytes received", client->fd, data_length);
+
+          client->read_buffer_len -= frame_length;
+          memmove(client->read_buffer, client->read_buffer + frame_length, client->read_buffer_len);
+        }
+      }
     } else {
       std::string_view request(client->read_buffer, client->read_buffer_len);
       std::size_t start = request.find("Sec-WebSocket-Key");
@@ -159,6 +207,7 @@ class Server {
           disconnect(client);
           return;
         }
+        client->read_buffer_len = 0;
         client->connected = true;
       }
     }
