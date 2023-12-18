@@ -5,6 +5,7 @@ import io_loop;
 import logger;
 import sha1;
 
+#include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 
@@ -60,7 +61,12 @@ class Server {
       logger::last("Failed to accept connection on server socket %d", fd);
       return;
     }
-    logger::info("New connection with address length: %d", addr_len);
+    char host[NI_MAXHOST];
+    if (getnameinfo(&addr, addr_len, host, sizeof(host), nullptr, 0, NI_NUMERICHOST) != 0) {
+      logger::last("Failed to convert socker address to host name");
+      return;
+    }
+    logger::info("[%d] new WebSocket connection from %s", client_fd, host);
     // TODO: implement
   }
 };
