@@ -38,7 +38,8 @@ export namespace WebSocket {
 
 class Server {
  public:
-  Server(IOLoop& io_loop, int port) : io_loop(io_loop) {
+  Server(IOLoop& io_loop, int port, Comms::Items& items)
+      : io_loop(io_loop), items(items) {
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
       logger::last("Failed to create WebSocket server socket");
@@ -71,6 +72,7 @@ class Server {
   }
  private:
   IOLoop& io_loop;
+  Comms::Items& items;
   std::map<int, WebSocketClient*> clients;
 
   void send_ws_frame(WebSocketClient* client, char opcode, const void* data, size_t size) {
@@ -222,10 +224,8 @@ class Server {
             client->read_buffer[i + header_length] ^= mask[i % 4];
           }
 
-          //for (auto& handler : ws_handlers) {
-          //  handler(fd, data_length, client->read_buffer + header_length);
-          //}
-          logger::info("WS(%d): frame of %d bytes received", client->fd, data_length);
+          char* data = client->read_buffer + header_length;
+          items.on_item_received(data[0], data + 1, data_length - 1);
 
           client->read_buffer_len -= frame_length;
           memmove(client->read_buffer, client->read_buffer + frame_length, client->read_buffer_len);

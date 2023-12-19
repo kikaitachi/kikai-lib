@@ -12,8 +12,9 @@ export namespace App {
 class Application {
  public:
   Application(int port = 3000) {
+    items = new Comms::Items();
     io_loop = new IOLoop();
-    ws_server = new WebSocket::Server(*io_loop, port);
+    ws_server = new WebSocket::Server(*io_loop, port, *items);
     // TODO: add logger comms item
   }
 
@@ -22,6 +23,7 @@ class Application {
   }
 
  private:
+  Comms::Items* items;
   IOLoop* io_loop;
   WebSocket::Server* ws_server;
 };
