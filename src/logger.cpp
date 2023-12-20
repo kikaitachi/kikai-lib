@@ -9,11 +9,15 @@ import mpscq;
 #include <time.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstring>
 #include <mutex>
 #include <string>
+#include <thread>
 
 export module logger;
+
+using namespace std::chrono_literals;
 
 namespace logger {
 
@@ -21,6 +25,44 @@ export enum level { level_debug,
                     level_info,
                     level_warn,
                     level_error };
+
+class LogEntry {
+ public:
+  LogEntry(std::string message) : message(message) {
+     clock_gettime(CLOCK_REALTIME, &timestamp);
+     level = 'R';
+  }
+
+  void print() {
+    struct tm time;
+    localtime_r(&timestamp.tv_sec, &time);
+    fprintf(
+        stderr,
+        "%02d-%02d-%02d %02d:%02d:%02d.%'09ld %c %s\n",
+        time.tm_year + 1900, time.tm_mon + 1, time.tm_mday,
+        time.tm_hour, time.tm_min, time.tm_sec,
+        timestamp.tv_nsec, level, message.c_str());
+  }
+
+  char level;
+  timespec timestamp;
+  std::string message;
+};
+
+static mpscq::Queue<LogEntry> entries;
+
+std::thread logging_thread([]() {
+  for ( ; ; ) {
+    entries.drain([](auto entry) {
+      entry->print();
+    });
+    std::this_thread::sleep_for(100ms);
+  }
+});
+
+export void rapid(std::string message) {
+  entries.push(new LogEntry(message));
+}
 
 static level current_level = level_debug;
 
@@ -49,7 +91,7 @@ void log_entry(const char level, const std::string format, va_list argptr) {
   const std::lock_guard<std::mutex> lock(mutex);
   fprintf(
       stderr,
-      "%02d-%02d-%02d %02d:%02d:%02d.%09ld %c ",
+      "%02d-%02d-%02d %02d:%02d:%02d.%'09ld %c ",
       now_tm.tm_year + 1900, now_tm.tm_mon + 1, now_tm.tm_mday,
       now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
       now_timespec.tv_nsec, level);

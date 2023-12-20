@@ -28,18 +28,20 @@ class Queue {
     } while (!head.compare_exchange_weak(node->next, node));
   }
 
-  void drain(std::function<void(T)> callback) {
+  void drain(std::function<void(T*)> callback) {
     visit(head, callback);
   }
 
  private:
   std::atomic<Node<T>*> head = nullptr;
 
-  void visit(Node<T>* node, std::function<void(T)> callback) {
+  void visit(Node<T>* node, std::function<void(T*)> callback) {
     if (node != nullptr) {
       visit(node->next, callback);
       if (node->data != nullptr) {
         callback(node->data);
+        delete node->data;
+        node->data = nullptr;
         if (node->next != nullptr) {
           delete node->next;
           node->next = nullptr;

@@ -5,6 +5,8 @@ import io_loop;
 import logger;
 import websocket;
 
+#include <locale.h>
+
 export module app;
 
 export namespace App {
@@ -12,6 +14,7 @@ export namespace App {
 class Application {
  public:
   Application(int port = 3000) {
+    setlocale(LC_NUMERIC, "");
     items = new Comms::Items();
     io_loop = new IOLoop();
     ws_server = new WebSocket::Server(*io_loop, port, *items);
