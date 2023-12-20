@@ -1,5 +1,7 @@
 module;
 
+import mpscq;
+
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>

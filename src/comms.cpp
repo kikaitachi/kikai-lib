@@ -28,14 +28,14 @@ class Item {
     return 0;
   }
 
-  virtual int write_definition(char* buffer) {
+  virtual void write_definition(char* buffer) {
   }
 
   virtual int value_length() {
     return 0;
   }
 
-  virtual int write_value(char* buffer) {
+  virtual void write_value(char* buffer) {
   }
 
   virtual void on_received(char* data, int len) {
@@ -71,7 +71,7 @@ class ItemString: public Item {
     return value.size();
   }
 
-  int write_definition(char* buffer) {
+  void write_definition(char* buffer) {
     memcpy(buffer, value.c_str(), definition_length());
   }
 
@@ -79,7 +79,7 @@ class ItemString: public Item {
     return value.size();
   }
 
-  int write_value(char* buffer) {
+  void write_value(char* buffer) {
     memcpy(buffer, value.c_str(), value_length());
   }
 
@@ -97,7 +97,7 @@ class ItemFloat: public Item {
     return sizeof(value);
   }
 
-  int write_definition(char* buffer) {
+  void write_definition(char* buffer) {
     memcpy(buffer, &value, definition_length());
   }
 
@@ -105,7 +105,7 @@ class ItemFloat: public Item {
     return sizeof(value);
   }
 
-  int write_value(char* buffer) {
+  void write_value(char* buffer) {
     memcpy(buffer, &value, value_length());
   }
 

@@ -15,6 +15,7 @@ target_sources(${PROJECT_NAME}
     src/comms.cpp
     src/io_loop.cpp
     src/logger.cpp
+    src/mpscq.cpp
     src/sha1.cpp
     src/websocket.cpp
 )
