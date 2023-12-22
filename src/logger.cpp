@@ -11,7 +11,7 @@ import mpscq;
 
 #include <chrono>
 #include <cstring>
-#include <mutex>
+#include <format>
 #include <string>
 #include <thread>
 
@@ -49,7 +49,7 @@ class LogEntry {
   std::string message;
 };
 
-static mpscq::Queue<LogEntry> entries;
+mpscq::Queue<LogEntry> entries;
 
 std::thread logging_thread([]() {
   for ( ; ; ) {
@@ -61,8 +61,6 @@ std::thread logging_thread([]() {
 });
 
 static level current_level = level_debug;
-
-static std::mutex mutex;
 
 export void set_level(level log_level) {
   current_level = log_level;
@@ -84,9 +82,20 @@ void log_entry(const char level, const std::string format, va_list argptr) {
   entries.push(new LogEntry(level, std::string(message, len)));
 }
 
-export void debug(const std::string format, ...) {
+/*export void debug(const std::string format, ...) {
   if (current_level <= level_debug) {
     log('D', format);
+  }
+}*/
+
+export template <typename... Args>
+void debug(std::format_string<Args...> rt_fmt_str, Args&&... args) {
+  if (current_level <= level_debug) {
+    /*std::string str;
+    auto it = std::back_inserter(str);
+    std::format_to(it, rt_fmt_str, std::forward<Args>(args)...);
+    entries.push(new LogEntry('D', str));*/
+    entries.push(new LogEntry('D', std::format(rt_fmt_str, std::forward<Args>(args)...)));
   }
 }
 
